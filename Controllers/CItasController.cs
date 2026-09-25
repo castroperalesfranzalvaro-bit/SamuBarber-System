@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SamuBarber.Api.Data;
 using SamuBarber.Api.DTOs;
 using SamuBarber.Api.Models;
+using SamuBarber.Api.Services;
 
 namespace SamuBarber.Api.Controllers
 {
@@ -11,57 +12,85 @@ namespace SamuBarber.Api.Controllers
     public class CitasController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly AuditoriaService _auditoria;
 
-        public CitasController(ApplicationDbContext context)
+        public CitasController(ApplicationDbContext context, AuditoriaService auditoria)
         {
             _context = context;
+            _auditoria = auditoria;
         }
 
-        [HttpPost("agendar")]
-        public async Task<IActionResult> AgendarCita([FromBody] AgendarCitaDto dto)
+        // --- ENDPOINT PARA CANCELAR CITA (Tarea 2) ---
+        [HttpPost("cancelar")]
+public async Task<IActionResult> CancelarCita([FromBody] CancelarCitaDto dto)
+{
+    var cita = await _context.Citas.FirstOrDefaultAsync(c => c.Id == dto.IdCita);
+
+    if (cita == null)
+    {
+        return NotFound(new { mensaje = "La cita no existe." });
+    }
+
+    cita.Estado = "Cancelada";
+    cita.MotivoCancelacion = dto.Motivo;
+    cita.FechaModificacion = DateTime.UtcNow;
+    cita.UsuarioModificacion = dto.UsuarioResponsable;
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new { mensaje = "Cita cancelada con éxito." });
+}
+
+        // --- ENDPOINT PARA REPROGRAMAR CITA (RF-07) ---
+        [HttpPut("reprogramar")]
+        public async Task<IActionResult> ReprogramarCita([FromBody] ReprogramarCitaDto dto)
         {
-            var servicio = await _context.Servicios.FindAsync(dto.IdServicio);
-            if (servicio == null)
+            var cita = await _context.Citas.FindAsync(dto.IdCita);
+
+            if (cita == null)
             {
-                return BadRequest(new { mensaje = "El servicio seleccionado no existe." });
+                return NotFound(new { mensaje = "La cita especificada no existe." });
             }
 
-            int duracionBloque = servicio.DuracionMinutos > 0 ? servicio.DuracionMinutos : 40;
+            int barberoId = dto.NuevoIdBarbero ?? cita.IdBarbero;
 
-            DateTime inicioNuevaCita = dto.FechaHora;
-            DateTime finNuevaCita = inicioNuevaCita.AddMinutes(duracionBloque);
+            // Validar que el nuevo horario no choque con otra cita activa del barbero
+            bool existeSolapamiento = await _context.Citas.AnyAsync(c =>
+                c.Id != dto.IdCita &&
+                c.IdBarbero == barberoId &&
+                c.Estado != "Cancelada" &&
+                c.FechaHora == dto.NuevaFechaHora);
 
-            // Validación de cruce de horarios (Tarea 3)
-            bool existeCruce = await _context.Citas.AnyAsync(c =>
-                c.IdBarbero == dto.IdBarbero &&
-                c.Estado == "Agendada" &&
-                ((inicioNuevaCita >= c.FechaHora && inicioNuevaCita < c.FechaHora.AddMinutes(c.DuracionTotalMin)) ||
-                 (finNuevaCita > c.FechaHora && finNuevaCita <= c.FechaHora.AddMinutes(c.DuracionTotalMin)) ||
-                 (inicioNuevaCita <= c.FechaHora && finNuevaCita >= c.FechaHora.AddMinutes(c.DuracionTotalMin)))
-            );
-
-            if (existeCruce)
+            if (existeSolapamiento)
             {
-                return Conflict(new { mensaje = "El barbero seleccionado ya tiene una cita reservada en ese horario." });
+                return Conflict(new { mensaje = "El barbero no tiene disponibilidad en la nueva fecha u hora seleccionada." });
             }
 
-            var nuevaCita = new Cita
-            {
-                IdCliente = dto.IdCliente,
-                IdBarbero = dto.IdBarbero,
-                IdServicio = dto.IdServicio,
-                FechaHora = dto.FechaHora,
-                Estado = "Agendada",
-                DuracionTotalMin = duracionBloque
-            };
+            DateTime fechaAnterior = cita.FechaHora;
 
-            _context.Citas.Add(nuevaCita);
+            // Actualizar cita
+            cita.FechaHora = dto.NuevaFechaHora;
+            cita.IdBarbero = barberoId;
+            cita.Estado = "Reprogramada";
+            cita.FechaModificacion = DateTime.Now;
+            cita.UsuarioModificacion = dto.UsuarioResponsable;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { 
-                mensaje = "Cita agendada exitosamente.", 
-                idCita = nuevaCita.IdCita,
-                confirmacion = $"Reserva confirmada para el {inicioNuevaCita:dd/MM/yyyy a las HH:mm} hs."
+            // Registrar Auditoría (Tarea 3 - RNF-20)
+            _auditoria.RegistrarAnulacionOModificacion(
+                cita.Id,
+                "REPROGRAMACIÓN",
+                dto.UsuarioResponsable,
+                $"Fecha anterior: {fechaAnterior:yyyy-MM-dd HH:mm} -> Nueva fecha: {dto.NuevaFechaHora:yyyy-MM-dd HH:mm}"
+            );
+
+            return Ok(new
+            {
+                mensaje = "Cita reprogramada exitosamente.",
+                idCita = cita.Id,
+                nuevaFechaHora = cita.FechaHora,
+                idBarbero = cita.IdBarbero
             });
         }
     }

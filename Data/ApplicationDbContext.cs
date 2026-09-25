@@ -9,5 +9,13 @@ namespace SamuBarber.Api.Data
 
         public DbSet<Cita> Citas { get; set; }
         public DbSet<Servicio> Servicios { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            
+            // Forzar a Entity Framework a usar la tabla 'citas' en minúsculas en PostgreSQL
+            modelBuilder.Entity<Cita>().ToTable("cita");
+        }
     }
 }

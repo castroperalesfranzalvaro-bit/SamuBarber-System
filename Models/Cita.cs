@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,7 +9,7 @@ namespace SamuBarber.Api.Models
     {
         [Key]
         [Column("id_cita")]
-        public int IdCita { get; set; }
+        public int Id { get; set; }
 
         [Column("id_cliente")]
         public int IdCliente { get; set; }
@@ -26,23 +27,15 @@ namespace SamuBarber.Api.Models
         public string Estado { get; set; } = "Agendada";
 
         [Column("duracion_total_min")]
-        public int DuracionTotalMin { get; set; }
-    }
+        public int DuracionTotalMin { get; set; } = 40;
 
-    [Table("servicio")]
-    public class Servicio
-    {
-        [Key]
-        [Column("id_servicio")]
-        public int IdServicio { get; set; }
+        [Column("fecha_modificacion")]
+        public DateTime? FechaModificacion { get; set; }
 
-        [Column("nombre_servicio")]
-        public string NombreServicio { get; set; } = string.Empty;
+        [Column("usuario_modificacion")]
+        public string? UsuarioModificacion { get; set; }
 
-        [Column("duracion_minutos")]
-        public int DuracionMinutos { get; set; }
-
-        [Column("precio")]
-        public decimal Precio { get; set; }
+        [Column("motivo_cancelacion")]
+        public string? MotivoCancelacion { get; set; }
     }
 }
