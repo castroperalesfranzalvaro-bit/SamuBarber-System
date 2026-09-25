@@ -1,0 +1,7 @@
+@SamuBarber.Api_HostAddress = http://localhost:5224
+
+GET {{SamuBarber.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
