@@ -93,5 +93,67 @@ public async Task<IActionResult> CancelarCita([FromBody] CancelarCitaDto dto)
                 idBarbero = cita.IdBarbero
             });
         }
+
+        // 1. Endpoint Tarea 1 (Backend support): Registrar llegada de cliente sin cita
+[HttpPost("registrar-sin-cita")]
+public async Task<IActionResult> RegistrarClienteSinCita([FromBody] RegistrarSinCitaDto dto)
+{
+    var nuevaCita = new Cita
+    {
+        IdCliente = dto.IdCliente,
+        IdBarbero = dto.IdBarbero,
+        IdServicio = dto.IdServicio,
+        FechaHora = DateTime.UtcNow, // Hora actual de llegada
+        Estado = "En Espera",
+        DuracionTotalMin = dto.DuracionMinutos,
+        EsSinCita = true // Marca que no tenía reserva previa
+    };
+
+    _context.Citas.Add(nuevaCita);
+    await _context.SaveChangesAsync();
+
+    return Ok(new 
+    { 
+        mensaje = "Cliente registrado en la cola de espera exitosamente.",
+        citaId = nuevaCita.Id 
+    });
+}
+
+// 2. Endpoint Tarea 2: Obtener Cola de Espera Priorizada (RF-12)
+[HttpGet("cola-espera/{idBarbero}")]
+public async Task<IActionResult> ObtenerColaEsperaPriorizada(int idBarbero)
+{
+    // Usamos DateTime.UtcNow.Date para evitar conflictos de zona horaria con PostgreSQL
+    var fechaHoyUtc = DateTime.UtcNow.Date;
+
+    var colaPriorizada = await _context.Citas
+        .Where(c => c.IdBarbero == idBarbero 
+                 && c.FechaHora.Date == fechaHoyUtc 
+                 && (c.Estado == "Agendada" || c.Estado == "En Espera"))
+        .OrderBy(c => c.EsSinCita) // False (Reserva) va PRIMERO, True (Sin Cita) va DESPUÉS
+        .ThenBy(c => c.FechaHora)
+        .Select(c => new 
+        {
+            c.Id,
+            c.IdCliente,
+            c.IdBarbero,
+            c.IdServicio,
+            Hora = c.FechaHora.ToString("HH:mm"),
+            Tipo = c.EsSinCita ? "Sin Cita (Walk-in)" : "Reserva Previa",
+            Prioridad = c.EsSinCita ? 2 : 1,
+            c.Estado
+        })
+        .ToListAsync();
+
+    return Ok(colaPriorizada);
+}
+
+public class RegistrarSinCitaDto
+    {
+        public int IdCliente { get; set; }
+        public int IdBarbero { get; set; }
+        public int IdServicio { get; set; }
+        public int DuracionMinutos { get; set; } = 40;
+    }
     }
 }
