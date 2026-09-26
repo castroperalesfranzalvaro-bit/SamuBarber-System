@@ -24,13 +24,13 @@ namespace SamuBarber.Api.Models
         public DateTime FechaHora { get; set; }
 
         [Column("estado")]
-        public string Estado { get; set; } = "Agendada"; // 'Agendada', 'En Espera', 'Atendiendo', 'Completada', 'Cancelada'
+        public string Estado { get; set; } = "Agendada";
 
         [Column("duracion_total_min")]
-        public int DuracionTotalMin { get; set; } = 40;
+        public int DuracionTotalMin { get; set; } = 40; // <-- AÑADIDO
 
         [Column("es_sin_cita")]
-        public bool EsSinCita { get; set; } = false; // <-- NUEVA COLUMNA PARA SAMU-26
+        public bool EsSinCita { get; set; } = false; // <-- AÑADIDO
 
         [Column("fecha_modificacion")]
         public DateTime? FechaModificacion { get; set; }

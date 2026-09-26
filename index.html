@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samu Barber - Recepción y Cola Visual</title>
+    <!-- Bootstrap 5 CSS para diseño rápido -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; }
+        .card-header { font-weight: bold; }
+        .badge-prioridad-alta { background-color: #198754; color: white; }
+        .badge-prioridad-normal { background-color: #0d6efd; color: white; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="container-fluid">
+        <h1 class="mb-4 text-center">💈 Samu Barber System</h1>
+
+        <div class="row g-4">
+            <!-- TAREA 1 (SAMU-26): Panel de Recepción (Registro Rápido Sin Cita) -->
+            <div class="col-md-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        📍 Recepción: Registrar Cliente Sin Cita
+                    </div>
+                    <div class="card-body">
+                        <form id="formSinCita">
+                            <div class="mb-3">
+                                <label class="form-label">ID del Cliente:</label>
+                                <input type="number" id="idCliente" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ID del Barbero:</label>
+                                <input type="number" id="idBarbero" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ID del Servicio:</label>
+                                <input type="number" id="idServicio" class="form-control" value="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Duración Estimada (Minutos):</label>
+                                <input type="number" id="duracion" class="form-control" value="40">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">➕ Agregar a Cola de Espera</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TAREA 1 (SAMU-25): Módulo para Cancelar Cita -->
+                <div class="card shadow-sm mt-4">
+                    <div class="card-header bg-danger text-white">
+                        🚫 Cancelar Cita
+                    </div>
+                    <div class="card-body">
+                        <form id="formCancelar">
+                            <div class="mb-3">
+                                <label class="form-label">ID de la Cita:</label>
+                                <input type="number" id="cancelarIdCita" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Usuario Responsable:</label>
+                                <input type="text" id="cancelarUsuario" class="form-control" value="Alex Alarcon" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Motivo de Cancelación:</label>
+                                <input type="text" id="cancelarMotivo" class="form-control" placeholder="Cliente tuvo imprevisto" required>
+                            </div>
+                            <button type="submit" class="btn btn-outline-danger w-100">Confirmar Cancelación</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAREA 2 (SAMU-26): Cola de Espera Visual Priorizada -->
+            <div class="col-md-7">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex justify-between align-items-center">
+                        <span>📋 Cola de Espera Priorizada (RF-12)</span>
+                        <button class="btn btn-sm btn-light" onclick="cargarColaEspera()">🔄 Actualizar</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Hora</th>
+                                        <th>ID Cita</th>
+                                        <th>Cliente</th>
+                                        <th>Tipo de Cita</th>
+                                        <th>Prioridad</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaCola">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Cargando cola de espera...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT JS PARA CONEXIÓN CON EL BACKEND -->
+    <script>
+        const API_BASE = 'http://localhost:5224/api/Citas';
+
+        // 1. Cargar Cola de Espera Priorizada (GET)
+        async function cargarColaEspera() {
+            const idBarbero = document.getElementById('idBarbero').value || 1;
+            const tabla = document.getElementById('tablaCola');
+
+            try {
+                const res = await fetch(`${API_BASE}/cola-espera/${idBarbero}`);
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    tabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay citas en espera para hoy.</td></tr>`;
+                    return;
+                }
+
+                tabla.innerHTML = '';
+                data.forEach(item => {
+                    const badgeClass = item.prioridad === 1 ? 'badge-prioridad-alta' : 'badge-prioridad-normal';
+                    tabla.innerHTML += `
+                        <tr>
+                            <td><strong>${item.hora}</strong></td>
+                            <td>#${item.id}</td>
+                            <td>Cliente ${item.idCliente}</td>
+                            <td>${item.tipo}</td>
+                            <td><span class="badge ${badgeClass}">${item.prioridad === 1 ? 'Alta (Reserva)' : 'Normal (Sin Cita)'}</span></td>
+                            <td><span class="badge bg-warning text-dark">${item.estado}</span></td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                tabla.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al conectar con la API. ¿Iniciaste el backend?</td></tr>`;
+            }
+        }
+
+        // 2. Registrar Cliente Sin Cita (POST)
+        document.getElementById('formSinCita').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bodyData = {
+                idCliente: parseInt(document.getElementById('idCliente').value),
+                idBarbero: parseInt(document.getElementById('idBarbero').value),
+                idServicio: parseInt(document.getElementById('idServicio').value),
+                duracionMinutos: parseInt(document.getElementById('duracion').value)
+            };
+
+            const res = await fetch(`${API_BASE}/registrar-sin-cita`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+
+            const data = await res.json();
+            alert(data.mensaje);
+            cargarColaEspera(); // Recargar la tabla automáticamente
+        });
+
+        // 3. Cancelar Cita (POST)
+        document.getElementById('formCancelar').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bodyData = {
+                idCita: parseInt(document.getElementById('cancelarIdCita').value),
+                usuarioResponsable: document.getElementById('cancelarUsuario').value,
+                motivo: document.getElementById('cancelarMotivo').value
+            };
+
+            const res = await fetch(`${API_BASE}/cancelar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+
+            const data = await res.json();
+            alert(data.mensaje || 'Cita procesada.');
+            cargarColaEspera(); // Recargar la tabla automáticamente
+        });
+
+        // Cargar datos al abrir la página
+        cargarColaEspera();
+    </script>
+</body>
+</html>
