@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Barbero - SamuBarber</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; }
+        .card-stat { border: none; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 1.8rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-scissors me-2"></i>SamuBarber - Mi Mi Panel</a>
+        <div class="d-flex align-items-center text-white">
+            <i class="bi bi-person-badge fs-5 me-2"></i>
+            <span class="fw-bold me-3">Barbero ID: <span id="lblBarberoId">1</span></span>
+            <button class="btn btn-outline-light btn-sm" onclick="cambiarBarbero()"><i class="bi bi-arrow-repeat"></i> Cambiar ID</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">Resumen Diario de Comisiones</h3>
+            <small class="text-muted">Mano de obra y servicios prestados en el día de hoy.</small>
+        </div>
+        <button class="btn btn-dark" onclick="cargarComisiones()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+    </div>
+
+    <!-- TAREA 2 & 3: Tarjetas con totales de comisiones del Barbero (Oculta ventas globales del local) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card card-stat p-3 bg-white text-dark">
+                <span class="text-muted fw-bold">Cortes / Servicios Hoy</span>
+                <div class="stat-value text-primary mt-1" id="totalCortes">0</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stat p-3 bg-white text-dark">
+                <span class="text-muted fw-bold">Generado en Mano de Obra</span>
+                <div class="stat-value text-secondary mt-1">Bs. <span id="totalManoObra">0.00</span></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stat p-3 bg-success text-white">
+                <span class="fw-bold">Mi Comisión (50% Exacto)</span>
+                <div class="stat-value mt-1">Bs. <span id="totalComision">0.00</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAREA 2: Listado de servicios del día -->
+    <div class="card card-stat p-4 mb-5">
+        <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2"></i>Detalle de Servicios Atendidos Hoy</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Hora</th>
+                        <th># Venta</th>
+                        <th>Servicio / Corte</th>
+                        <th>Cant.</th>
+                        <th>Mano de Obra</th>
+                        <th>Comisión Barbero (50%)</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaCortes">
+                    <tr><td colspan="6" class="text-center text-muted">Cargando información...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:5224/api/Barberos';
+    let idBarberoActual = localStorage.getItem('idBarberoSesion') || 1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('lblBarberoId').innerText = idBarberoActual;
+        cargarComisiones();
+    });
+
+    async function cargarComisiones() {
+        try {
+            const res = await fetch(`${API_URL}/${idBarberoActual}/comisiones-dia`);
+            if (!res.ok) throw new Error('Error al cargar comisiones.');
+
+            const data = await res.json();
+
+            // Renderizar indicadores
+            document.getElementById('totalCortes').innerText = data.totalCortesAtendidos;
+            document.getElementById('totalManoObra').innerText = data.totalManoObraGenerada.toFixed(2);
+            document.getElementById('totalComision').innerText = data.totalComisionGanada.toFixed(2);
+
+            // Renderizar tabla
+            const tabla = document.getElementById('tablaCortes');
+            tabla.innerHTML = '';
+
+            if (data.cortesRealizados.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No registras cortes atenciones registradas hoy.</td></tr>';
+                return;
+            }
+
+            data.cortesRealizados.forEach(c => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${c.fecha}</td>
+                    <td><strong>#${c.idVenta}</strong></td>
+                    <td>${c.nombreServicio}</td>
+                    <td>${c.cantidad}</td>
+                    <td>Bs. ${c.subtotalServicio.toFixed(2)}</td>
+                    <td class="fw-bold text-success">Bs. ${(c.subtotalServicio * 0.50).toFixed(2)}</td>
+                `;
+                tabla.appendChild(row);
+            });
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('tablaCortes').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al conectar con la API. Revisa que el backend esté corriendo.</td></tr>';
+        }
+    }
+
+    function cambiarBarbero() {
+        const nuevoId = prompt('Ingresa el ID del Barbero en sesión:', idBarberoActual);
+        if (nuevoId && !isNaN(nuevoId)) {
+            idBarberoActual = nuevoId;
+            localStorage.setItem('idBarberoSesion', idBarberoActual);
+            document.getElementById('lblBarberoId').innerText = idBarberoActual;
+            cargarComisiones();
+        }
+    }
+</script>
+
+</body>
+</html>
