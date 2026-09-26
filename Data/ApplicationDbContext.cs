@@ -10,12 +10,18 @@ namespace SamuBarber.Api.Data
         public DbSet<Cita> Citas { get; set; }
         public DbSet<Servicio> Servicios { get; set; }
 
+        public DbSet<Venta> Ventas { get; set; }
+        public DbSet<DetalleVenta> DetallesVenta { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-            
-            // Forzar a Entity Framework a usar la tabla 'citas' en minúsculas en PostgreSQL
-            modelBuilder.Entity<Cita>().ToTable("cita");
-        }
+{
+    base.OnModelCreating(modelBuilder);
+
+    // Mapeo explícito de la relación Venta -> DetalleVenta
+    modelBuilder.Entity<DetalleVenta>()
+        .HasOne(d => d.Venta)
+        .WithMany(v => v.Detalles)
+        .HasForeignKey(d => d.IdVenta);
+}
+        
     }
 }
