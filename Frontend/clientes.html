@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes - SamuBarber</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card-custom { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .badge-discount { background-color: #198754; color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-scissors me-2"></i>SamuBarber POS</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="pos.html"><i class="bi bi-cart3"></i> Caja / POS</a>
+            <a class="nav-link active" href="clientes.html"><i class="bi bi-people"></i> Clientes</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mb-5">
+    <h3 class="fw-bold mb-4"><i class="bi bi-person-lines-fill me-2"></i>Módulo de Fidelización y Clientes</h3>
+
+    <div class="row g-4">
+        <!-- Columna Izquierda: Lista de Clientes -->
+        <div class="col-md-4">
+            <div class="card card-custom p-3">
+                <h5 class="fw-bold mb-3"><i class="bi bi-search me-1"></i> Seleccionar Cliente</h5>
+                <div class="list-group list-group-flush" id="listaClientes">
+                    <div class="text-center py-3 text-muted">Cargando clientes...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Detalle, Notas e Historial -->
+        <div class="col-md-8">
+            <div id="mensajePlaceholder" class="card card-custom p-5 text-center text-muted">
+                <i class="bi bi-person-bounding-box display-1 mb-3"></i>
+                <p class="fs-5 mb-0">Selecciona un cliente de la lista para ver sus datos, notas de corte e historial de visitas.</p>
+            </div>
+
+            <div id="detalleCliente" class="d-none">
+                <!-- Tarjeta de Información General -->
+                <div class="card card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h4 class="fw-bold mb-0" id="clienteNombre">-</h4>
+                            <span class="text-muted"><i class="bi bi-telephone me-1"></i><span id="clienteTelefono">-</span></span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary fs-6 mb-1" id="badgeVisitas">0 Visitas</span>
+                            <div id="alertaDescuento"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sección de Notas de Corte / Preferencias -->
+                    <div class="mt-3">
+                        <label for="notasCorte" class="form-label fw-bold"><i class="bi bi-journal-text me-1"></i> Notas del Corte Habitual / Preferencias (RF-04):</label>
+                        <textarea class="form-control mb-2" id="notasCorte" rows="3" placeholder="Ej: Degradado bajo (Low Fade), marcar cerquillo, navaja arriba..."></textarea>
+                        <button class="btn btn-sm btn-dark float-end" onclick="guardarNotas()">
+                            <i class="bi bi-save me-1"></i> Guardar Notas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Historial de Ventas / Atenciones -->
+                <div class="card card-custom p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Historial de Atenciones</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th># Venta</th>
+                                    <th>Fecha</th>
+                                    <th>Método Pago</th>
+                                    <th>Detalle</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorial">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:5224/api/clientes'; // Ajusta el puerto si tu backend usa uno distinto
+    let clienteSeleccionadoId = null;
+
+    // Cargar la lista inicial de clientes
+    document.addEventListener('DOMContentLoaded', cargarClientes);
+
+    async function cargarClientes() {
+        try {
+            const res = await fetch(API_URL);
+            if (!res.ok) throw new Error('Error al conectar con la API');
+            const clientes = await res.json();
+
+            const listaHTML = document.getElementById('listaClientes');
+            listaHTML.innerHTML = '';
+
+            clientes.forEach(c => {
+                const item = document.createElement('button');
+                item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3';
+                item.onclick = () => seleccionarCliente(c.idCliente);
+                item.innerHTML = `
+                    <div>
+                        <div class="fw-bold">${c.nombre}</div>
+                        <small class="text-muted">${c.telefono}</small>
+                    </div>
+                    <span class="badge bg-secondary rounded-pill">${c.totalAtenciones} visitas</span>
+                `;
+                listaHTML.appendChild(item);
+            });
+        } catch (err) {
+            console.error(err);
+            document.getElementById('listaClientes').innerHTML = '<div class="alert alert-danger p-2 text-center">No se pudo cargar la lista. Revisa que el backend esté ejecutándose (`dotnet run`).</div>';
+        }
+    }
+
+    async function seleccionarCliente(id) {
+        clienteSeleccionadoId = id;
+        document.getElementById('mensajePlaceholder').classList.add('d-none');
+        document.getElementById('detalleCliente').classList.remove('d-none');
+
+        try {
+            const res = await fetch(`${API_URL}/${id}/historial`);
+            const data = await res.json();
+
+            // Llenar información general
+            document.getElementById('clienteNombre').innerText = data.nombre;
+            document.getElementById('clienteTelefono').innerText = data.telefono;
+            document.getElementById('badgeVisitas').innerText = `${data.totalAtenciones} Atenciones`;
+            document.getElementById('notasCorte').value = data.notasPreferencia !== 'Sin notas registradas.' ? data.notasPreferencia : '';
+
+            // Notificación de Descuento
+            const divAlerta = document.getElementById('alertaDescuento');
+            if (data.elegibleDescuento) {
+                divAlerta.innerHTML = `<span class="badge badge-discount p-2"><i class="bi bi-star-fill me-1"></i> ¡Próxima visita con 30% OFF!</span>`;
+            } else {
+                divAlerta.innerHTML = `<small class="text-muted">Faltan ${5 - (data.totalAtenciones % 5)} visitas para el 30% OFF</small>`;
+            }
+
+            // Llenar tabla de historial
+            const tabla = document.getElementById('tablaHistorial');
+            tabla.innerHTML = '';
+
+            if (data.historialVentas.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">El cliente aún no registra atenciones o compras pasadas.</td></tr>';
+            } else {
+                data.historialVentas.forEach(v => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>#${v.idVenta}</strong></td>
+                        <td>${v.fecha}</td>
+                        <td><span class="badge bg-light text-dark border">${v.metodoPago}</span></td>
+                        <td><small>${v.items.join('<br>')}</small></td>
+                        <td class="fw-bold text-success">Bs. ${v.total.toFixed(2)}</td>
+                    `;
+                    tabla.appendChild(row);
+                });
+            }
+
+        } catch (err) {
+            alert('Error al obtener el historial del cliente.');
+            console.error(err);
+        }
+    }
+
+    async function guardarNotas() {
+        if (!clienteSeleccionadoId) return;
+
+        const notas = document.getElementById('notasCorte').value;
+
+        try {
+            const res = await fetch(`${API_URL}/${clienteSeleccionadoId}/notas`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ notasPreferencia: notas })
+            });
+
+            if (res.ok) {
+                alert('¡Notas de corte guardadas correctamente!');
+            } else {
+                alert('No se pudieron guardar las notas.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error al conectar con el servidor.');
+        }
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

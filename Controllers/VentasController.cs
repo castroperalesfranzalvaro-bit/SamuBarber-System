@@ -19,58 +19,79 @@ namespace SamuBarber.Api.Controllers
 
         // TAREA 2: Lógica de Cobro con Efectivo y QR
         [HttpPost("registrar-cobro")]
-        public async Task<IActionResult> RegistrarCobro([FromBody] RegistrarVentaDto dto)
+public async Task<IActionResult> RegistrarCobro([FromBody] RegistrarVentaDto dto)
+{
+    if (dto.Items == null || !dto.Items.Any())
+        return BadRequest("Debe agregar al menos un ítem al detalle de la venta.");
+
+    decimal totalCalculado = dto.Items.Sum(i => i.Cantidad * i.PrecioUnitario);
+    bool descuentoAplicado = false;
+
+  
+        // TAREA 2 & 3: Lógica de fidelización si hay cliente asignado
+if (dto.IdCliente.HasValue && dto.IdCliente.Value > 0)
+{
+    var cliente = await _context.Clientes.FindAsync(dto.IdCliente.Value);
+    if (cliente != null)
+    {
+        cliente.TotalAtenciones += 1; // Incrementa la atención
+
+        // Regla de Negocio: Descuento 30% en la 5ta atención (o múltiplos de 5)
+        if (cliente.TotalAtenciones % 5 == 0)
         {
-            if (dto.Items == null || !dto.Items.Any())
-                return BadRequest("Debe agregar al menos un ítem al detalle de la venta.");
-
-            decimal totalCalculado = dto.Items.Sum(i => i.Cantidad * i.PrecioUnitario);
-            decimal cambio = 0;
-
-            if (dto.MetodoPago == "Efectivo")
-            {
-                if (dto.MontoRecibido < totalCalculado)
-                    return BadRequest("El monto recibido en efectivo es menor al total de la venta.");
-                
-                cambio = dto.MontoRecibido - totalCalculado;
-            }
-            else // QR
-            {
-                dto.MontoRecibido = totalCalculado;
-                cambio = 0;
-            }
-
-            var nuevaVenta = new Venta
-            {
-                IdBarbero = dto.IdBarbero,
-                IdCliente = dto.IdCliente,
-                FechaVenta = DateTime.UtcNow,
-                MetodoPago = dto.MetodoPago,
-                Total = totalCalculado,
-                MontoRecibido = dto.MontoRecibido,
-                Cambio = cambio,
-                Detalles = dto.Items.Select(i => new DetalleVenta
-                {
-                    TipoItem = i.TipoItem,
-                    IdItem = i.IdItem,
-                    NombreItem = i.NombreItem,
-                    Cantidad = i.Cantidad,
-                    PrecioUnitario = i.PrecioUnitario,
-                    Subtotal = i.Cantidad * i.PrecioUnitario
-                }).ToList()
-            };
-
-            _context.Ventas.Add(nuevaVenta);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                mensaje = "Venta registrada exitosamente",
-                idVenta = nuevaVenta.IdVenta,
-                total = nuevaVenta.Total,
-                cambio = nuevaVenta.Cambio
-            });
+            totalCalculado = totalCalculado * 0.70m; // Aplica 30% OFF
+            descuentoAplicado = true;
         }
+    }
+}
+    
+
+    decimal cambio = 0;
+    if (dto.MetodoPago == "Efectivo")
+    {
+        if (dto.MontoRecibido < totalCalculado)
+            return BadRequest($"El monto recibido es menor al total (Total: Bs. {totalCalculado:F2}).");
+        
+        cambio = dto.MontoRecibido - totalCalculado;
+    }
+    else // QR
+    {
+        dto.MontoRecibido = totalCalculado;
+        cambio = 0;
+    }
+
+    var nuevaVenta = new Venta
+    {
+        IdBarbero = dto.IdBarbero,
+        IdCliente = dto.IdCliente,
+        FechaVenta = DateTime.UtcNow,
+        MetodoPago = dto.MetodoPago,
+        Total = totalCalculado,
+        MontoRecibido = dto.MontoRecibido,
+        Cambio = cambio,
+        Detalles = dto.Items.Select(i => new DetalleVenta
+        {
+            TipoItem = i.TipoItem,
+            IdItem = i.IdItem,
+            NombreItem = i.NombreItem,
+            Cantidad = i.Cantidad,
+            PrecioUnitario = i.PrecioUnitario,
+            Subtotal = i.Cantidad * i.PrecioUnitario
+        }).ToList()
+    };
+
+    _context.Ventas.Add(nuevaVenta);
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        mensaje = descuentoAplicado ? "¡Venta registrada con 30% de descuento por 5ta visita!" : "Venta registrada exitosamente",
+        idVenta = nuevaVenta.IdVenta,
+        total = nuevaVenta.Total,
+        cambio = nuevaVenta.Cambio,
+        descuentoAplicado = descuentoAplicado
+    });
+}
 
         // TAREA 3: Crear Módulo Generador de Comprobante Digital
         [HttpGet("comprobante/{idVenta}")]

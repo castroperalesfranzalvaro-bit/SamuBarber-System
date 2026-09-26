@@ -35,6 +35,14 @@
                 <div class="card">
                     <div class="card-header bg-primary text-white">Detalle de la Venta</div>
                     <div class="card-body">
+                        <!-- Campo para seleccionar Cliente dentro de la tarjeta -->
+                        <div class="mb-3">
+                            <label for="selectClientePOS" class="form-label fw-bold">Cliente:</label>
+                            <select id="selectClientePOS" class="form-select">
+                                <option value="">-- Cargando clientes... --</option>
+                            </select>
+                        </div>
+
                         <table class="table table-sm">
                             <thead>
                                 <tr><th>Item</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr>
@@ -45,7 +53,7 @@
                         <h4>Total: Bs. <span id="lblTotal">0.00</span></h4>
 
                         <div class="mb-3 mt-3">
-                            <label class="form-label">Método de Pago:</label>
+                            <label class="form-label fw-bold">Método de Pago:</label>
                             <select id="metodoPago" class="form-select" onchange="toggleEfectivo()">
                                 <option value="Efectivo">Efectivo</option>
                                 <option value="QR">Pago QR</option>
@@ -53,12 +61,12 @@
                         </div>
 
                         <div class="mb-3" id="boxEfectivo">
-                            <label class="form-label">Monto Recibido:</label>
+                            <label class="form-label fw-bold">Monto Recibido:</label>
                             <input type="number" id="montoRecibido" class="form-control" value="0" oninput="calcularCambio()">
                             <small class="text-muted">Cambio: Bs. <span id="lblCambio">0.00</span></small>
                         </div>
 
-                        <button class="btn btn-success w-100" onclick="procesarCobro()">💳 Procesar Cobro</button>
+                        <button class="btn btn-success w-100 fw-bold" onclick="procesarCobro()">💳 Procesar Cobro</button>
                     </div>
                 </div>
 
@@ -72,8 +80,31 @@
 
     <script>
         const API_URL = 'http://localhost:5224/api/Ventas';
+        const API_CLIENTES_URL = 'http://localhost:5224/api/Clientes';
         let carrito = [];
         let totalVenta = 0;
+
+        // Cargar clientes automáticamente al abrir
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarClientesPOS();
+        });
+
+        async function cargarClientesPOS() {
+            try {
+                const res = await fetch(API_CLIENTES_URL);
+                if (!res.ok) return;
+                const clientes = await res.json();
+
+                const select = document.getElementById('selectClientePOS');
+                select.innerHTML = '<option value="">-- Consumidor Final (Sin Cliente) --</option>';
+
+                clientes.forEach(c => {
+                    select.innerHTML += `<option value="${c.idCliente}">${c.nombre} (${c.telefono})</option>`;
+                });
+            } catch (err) {
+                console.error('Error al cargar clientes en POS:', err);
+            }
+        }
 
         function agregarAlCarrito(tipo, id, nombre, precio) {
             let existe = carrito.find(i => i.tipoItem === tipo && i.idItem === id);
@@ -92,7 +123,7 @@
             carrito.forEach(item => {
                 let subtotal = item.cantidad * item.precioUnitario;
                 totalVenta += subtotal;
-                tbody.innerHTML += `<tr><td>${item.nombreItem}</td><td>${item.cantidad}</td><td>${item.precioUnitario}</td><td>${subtotal}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${item.nombreItem}</td><td>${item.cantidad}</td><td>Bs. ${item.precioUnitario}</td><td>Bs. ${subtotal}</td></tr>`;
             });
             document.getElementById('lblTotal').innerText = totalVenta.toFixed(2);
             calcularCambio();
@@ -112,9 +143,11 @@
         async function procesarCobro() {
             if (carrito.length === 0) return alert("Agrega ítems a la venta.");
 
+            const clienteIdVal = document.getElementById('selectClientePOS').value;
+
             let payload = {
                 idBarbero: 1,
-                idCliente: 1,
+                idCliente: clienteIdVal ? parseInt(clienteIdVal) : null,
                 metodoPago: document.getElementById('metodoPago').value,
                 montoRecibido: parseFloat(document.getElementById('montoRecibido').value) || totalVenta,
                 items: carrito
@@ -132,7 +165,7 @@
             }
 
             let data = await res.json();
-            alert("Cobro exitoso!");
+            alert("¡Cobro exitoso!");
             generarComprobante(data.idVenta);
         }
 

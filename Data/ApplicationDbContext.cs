@@ -12,6 +12,8 @@ namespace SamuBarber.Api.Data
 
         public DbSet<Venta> Ventas { get; set; }
         public DbSet<DetalleVenta> DetallesVenta { get; set; }
+
+        public DbSet<Cliente> Clientes { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     base.OnModelCreating(modelBuilder);
@@ -21,6 +23,8 @@ namespace SamuBarber.Api.Data
         .HasOne(d => d.Venta)
         .WithMany(v => v.Detalles)
         .HasForeignKey(d => d.IdVenta);
+
+        modelBuilder.Entity<Cliente>().ToTable("cliente");
 }
         
     }
