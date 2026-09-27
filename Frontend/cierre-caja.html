@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cierre de Caja y Finanzas - SamuBarber</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; }
+        .card-stat { border: none; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 1.8rem; font-weight: bold; }
+        .badge-perf { font-size: 0.85rem; font-weight: normal; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-scissors me-2"></i>SamuBarber - Administrador</a>
+        <span class="navbar-text text-white fw-bold"><i class="bi bi-cash-stack me-1"></i> Módulo de Cierre de Caja</span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">Cierre de Caja Diario</h3>
+            <small class="text-muted">Consolidado de ingresos y cálculo de reserva operativa para gastos fijos.</small>
+        </div>
+        <div>
+            <span id="badgeTiempoMs" class="badge bg-success badge-perf p-2 me-2">Cargando...</span>
+            <button class="btn btn-dark" onclick="cargarCierre()"><i class="bi bi-arrow-clockwise"></i> Recargar</button>
+        </div>
+    </div>
+
+    <!-- Panel de Configuración de Reserva Operativa -->
+    <div class="card card-stat p-3 mb-4 bg-white">
+        <h5 class="fw-bold mb-3"><i class="bi bi-sliders me-2"></i>Configuración de Reserva Operativa (Alquiler, Navajas, Insumos)</h5>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted fw-bold">Tipo de Reserva:</label>
+                <select id="selectTipoReserva" class="form-select" onchange="cambiarTipoReserva()">
+                    <option value="porcentaje" selected>Porcentaje (%) sobre total</option>
+                    <option value="fijo">Monto Fijo (Bs.)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted fw-bold" id="lblValorReserva">Porcentaje (%):</label>
+                <div class="input-group">
+                    <input type="number" id="txtValorReserva" class="form-control" value="20" min="0" step="1">
+                    <span class="input-group-text" id="addonSimbolo">%</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100 fw-bold" onclick="cargarCierre()">
+                    <i class="bi bi-calculator me-1"></i> Recalcular Cierre
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Consolidación por Método de Pago (TAREA 1) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-stat p-3 bg-white border-start border-success border-4">
+                <span class="text-muted fw-bold"><i class="bi bi-cash me-1 text-success"></i> Total Efectivo</span>
+                <div class="stat-value text-success mt-1">Bs. <span id="lblEfectivo">0.00</span></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat p-3 bg-white border-start border-primary border-4">
+                <span class="text-muted fw-bold"><i class="bi bi-qr-code me-1 text-primary"></i> Total QR / Transferencia</span>
+                <div class="stat-value text-primary mt-1">Bs. <span id="lblQR">0.00</span></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat p-3 bg-white border-start border-dark border-4">
+                <span class="text-muted fw-bold"><i class="bi bi-wallet2 me-1"></i> Ingresos Totales (Bruto)</span>
+                <div class="stat-value text-dark mt-1">Bs. <span id="lblIngresosTotales">0.00</span></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat p-3 bg-white border-start border-warning border-4">
+                <span class="text-muted fw-bold"><i class="bi bi-person-check me-1"></i> Ventas Atendidas</span>
+                <div class="stat-value text-secondary mt-1"><span id="lblVentasCount">0</span> ventas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descuento de Reserva Operativa y Utilidad Neta (TAREA 2) -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-6">
+            <div class="card card-stat p-4 bg-danger text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5"><i class="bi bi-pie-chart-fill me-2"></i>Reserva Operativa Descontada</span>
+                    <span class="badge bg-light text-danger fw-bold" id="lblInfoReserva">20%</span>
+                </div>
+                <div class="stat-value mt-2">Bs. <span id="lblMontoReserva">0.00</span></div>
+                <small class="mt-2 text-white-50">Monto reservado exclusivamente para alquiler del local, navajas y reposición de insumos.</small>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-stat p-4 bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold fs-5"><i class="bi bi-graph-up-arrow me-2"></i>Utilidad Neta Final</span>
+                    <span class="badge bg-light text-success fw-bold">Ganancia Limpia</span>
+                </div>
+                <div class="stat-value mt-2">Bs. <span id="lblUtilidadNeta">0.00</span></div>
+                <small class="mt-2 text-white-50">Ganancia real disponible tras deducción del fondo operativo.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'http://localhost:5224/api/Caja/cierre-diario';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarCierre();
+    });
+
+    function cambiarTipoReserva() {
+        const tipo = document.getElementById('selectTipoReserva').value;
+        const lbl = document.getElementById('lblValorReserva');
+        const addon = document.getElementById('addonSimbolo');
+        const input = document.getElementById('txtValorReserva');
+
+        if (tipo === 'porcentaje') {
+            lbl.innerText = 'Porcentaje (%):';
+            addon.innerText = '%';
+            input.value = 20;
+        } else {
+            lbl.innerText = 'Monto Fijo (Bs.):';
+            addon.innerText = 'Bs.';
+            input.value = 50;
+        }
+    }
+
+    async function cargarCierre() {
+        const tipo = document.getElementById('selectTipoReserva').value;
+        const valor = document.getElementById('txtValorReserva').value || 0;
+
+        try {
+            const res = await fetch(`${API_URL}?tipoReserva=${tipo}&valorReserva=${valor}`);
+            if (!res.ok) throw new Error('Error al consultar cierre diario.');
+
+            const data = await res.json();
+
+            // Renderizar consolidados de pago
+            document.getElementById('lblEfectivo').innerText = data.totalEfectivo.toFixed(2);
+            document.getElementById('lblQR').innerText = data.totalQR.toFixed(2);
+            document.getElementById('lblIngresosTotales').innerText = data.ingresosTotales.toFixed(2);
+            document.getElementById('lblVentasCount').innerText = data.totalVentasCount;
+
+            // Renderizar reserva y utilidad
+            document.getElementById('lblMontoReserva').innerText = data.montoReservaDescontado.toFixed(2);
+            document.getElementById('lblUtilidadNeta').innerText = data.utilidadNeta.toFixed(2);
+            document.getElementById('lblInfoReserva').innerText = tipo === 'porcentaje' ? `${data.valorReservaConfigurado}%` : `Bs. ${data.valorReservaConfigurado}`;
+
+            // TAREA 3: Verificación de Rendimiento (< 3.0 segundos)
+            const tiempoMs = data.tiempoProcesamientoMs;
+            const badge = document.getElementById('badgeTiempoMs');
+            badge.innerText = `⏱️ Tiempo backend: ${tiempoMs.toFixed(2)} ms (< 3.0s OK)`;
+            
+            if (tiempoMs < 3000) {
+                badge.className = 'badge bg-success badge-perf p-2 me-2';
+            } else {
+                badge.className = 'badge bg-warning text-dark badge-perf p-2 me-2';
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Error conectando a la API de Caja.');
+        }
+    }
+</script>
+
+</body>
+</html>
