@@ -2,192 +2,334 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Samu Barber - POS Punto de Venta</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; }
-        .ticket-box { background: #fff; padding: 15px; border: 1px dashed #333; font-family: monospace; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta (POS) - Samu Barber</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="p-4">
-    <div class="container-fluid">
-        <h2 class="mb-4">💈 Punto de Venta (POS) - Samu Barber</h2>
-        <div class="row">
-            <!-- Selección de Catálogo -->
-            <div class="col-md-7">
-                <div class="card mb-3">
-                    <div class="card-header bg-dark text-white">Catálogo de Servicios y Productos</div>
-                    <div class="card-body">
-                        <h5>Servicios (Cortes)</h5>
-                        <button class="btn btn-outline-primary m-1" onclick="agregarAlCarrito('Servicio', 1, 'Corte Clásico', 35)">Corte Clásico (Bs. 35)</button>
-                        <button class="btn btn-outline-primary m-1" onclick="agregarAlCarrito('Servicio', 2, 'Barba & Perfilar', 25)">Barba (Bs. 25)</button>
-                        <button class="btn btn-outline-primary m-1" onclick="agregarAlCarrito('Servicio', 3, 'Combo Barba + Corte', 50)">Combo (Bs. 50)</button>
+<body class="bg-light">
 
-                        <h5 class="mt-3">Productos</h5>
-                        <button class="btn btn-outline-success m-1" onclick="agregarAlCarrito('Producto', 1, 'Cera Modeladora', 40)">Cera Modeladora (Bs. 40)</button>
-                        <button class="btn btn-outline-success m-1" onclick="agregarAlCarrito('Producto', 2, 'Polvo Texturizante', 45)">Polvo Texturizante (Bs. 45)</button>
+    <div class="container-fluid py-4 px-4">
+        <h2 class="mb-4 fw-bold">💈 Punto de Venta (POS) - Samu Barber</h2>
+
+        <div class="row g-4">
+            <!-- COLUMNA IZQUIERDA: Catálogo e Ítems Seleccionados (Ancho 7) -->
+            <div class="col-lg-7">
+                
+                <!-- 1. Catálogo de Productos -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        Catálogo de Productos
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-bold text-muted mb-3">Productos Disponibles</h6>
+                        <div id="contenedorProductosPOS" class="d-flex gap-2 flex-wrap">
+                            <span class="text-muted small">Cargando catálogo...</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 2. Tabla de Ítems del Carrito -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white fw-bold">
+                        Ítems Seleccionados
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th class="text-center">Cant.</th>
+                                        <th>Precio Unit.</th>
+                                        <th>Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaCarrito">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">No hay ítems agregados.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Detalle de Venta y Cobro -->
-            <div class="col-md-5">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">Detalle de la Venta</div>
+            <!-- COLUMNA DERECHA: Resumen de Cobro y Pagos (Ancho 5) -->
+            <div class="col-lg-5">
+                <div class="card shadow-sm border-primary">
+                    <div class="card-header bg-primary text-white fw-bold fs-5">
+                        Resumen del Cobro
+                    </div>
                     <div class="card-body">
-                        <!-- Campo para seleccionar Cliente dentro de la tarjeta -->
+                        
+                        <!-- Nombre del Cliente -->
                         <div class="mb-3">
-                            <label for="selectClientePOS" class="form-label fw-bold">Cliente:</label>
-                            <select id="selectClientePOS" class="form-select">
-                                <option value="">-- Cargando clientes... --</option>
-                            </select>
+                            <label class="form-label fw-bold">Cliente:</label>
+                            <input type="text" id="txtNombreClientePOS" class="form-control form-control-lg bg-light" placeholder="Consumidor Final" readonly>
                         </div>
 
-                        <table class="table table-sm">
-                            <thead>
-                                <tr><th>Item</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr>
-                            </thead>
-                            <tbody id="tablaCarrito"></tbody>
-                        </table>
-                        <hr>
-                        <h4>Total: Bs. <span id="lblTotal">0.00</span></h4>
+                        <!-- Caja Grande con el Total -->
+                        <div class="p-3 bg-light rounded text-center mb-3 border">
+                            <span class="fs-6 text-muted fw-bold text-uppercase">Total a Pagar</span>
+                            <h1 class="text-primary fw-bold display-5 my-1">Bs. <span id="lblTotal">0.00</span></h1>
+                        </div>
 
-                        <div class="mb-3 mt-3">
+                        <!-- Método de Pago -->
+                        <div class="mb-3">
                             <label class="form-label fw-bold">Método de Pago:</label>
-                            <select id="metodoPago" class="form-select" onchange="toggleEfectivo()">
+                            <select id="metodoPago" class="form-select form-select-lg" onchange="toggleEfectivo()">
                                 <option value="Efectivo">Efectivo</option>
                                 <option value="QR">Pago QR</option>
                             </select>
                         </div>
 
-                        <div class="mb-3" id="boxEfectivo">
+                        <!-- Campo Efectivo / Cambio -->
+                        <div id="boxEfectivo" class="mb-3 p-3 bg-white rounded border">
                             <label class="form-label fw-bold">Monto Recibido:</label>
-                            <input type="number" id="montoRecibido" class="form-control" value="0" oninput="calcularCambio()">
-                            <small class="text-muted">Cambio: Bs. <span id="lblCambio">0.00</span></small>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text fw-bold">Bs.</span>
+                                <input type="number" id="montoRecibido" class="form-control form-control-lg" placeholder="0.00" oninput="calcularCambio()">
+                            </div>
+                            <div class="text-end fw-bold fs-6 text-success">
+                                Cambio: Bs. <span id="lblCambio">0.00</span>
+                            </div>
                         </div>
 
-                        <button class="btn btn-success w-100 fw-bold" onclick="procesarCobro()">💳 Procesar Cobro</button>
-                    </div>
-                </div>
+                        <!-- Botón Procesar Cobro -->
+                        <button class="btn btn-success btn-lg w-100 fw-bold py-3 fs-5 shadow-sm" onclick="procesarCobro()">
+                            💳 Procesar Cobro
+                        </button>
 
-                <!-- Comprobante Digital -->
-                <div id="boxComprobante" class="mt-3 d-none">
-                    <div class="ticket-box" id="ticketContent"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- SCRIPT DE LÓGICA Y API -->
     <script>
         const API_URL = 'http://localhost:5224/api/Ventas';
+        const API_CITAS_URL = 'http://localhost:5224/api/Citas';
         const API_CLIENTES_URL = 'http://localhost:5224/api/Clientes';
+        const API_PRODUCTOS_URL = 'http://localhost:5224/api/Productos';
+
         let carrito = [];
         let totalVenta = 0;
+        let idCitaActual = null;
+        let idClienteActual = null;
 
-        // Cargar clientes automáticamente al abrir
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarClientesPOS();
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Cargar productos desde la base de datos
+            await cargarProductosPOS();
+
+            // 2. Cargar cita enviada desde el panel del barbero
+            const citaGuardada = localStorage.getItem('citaPendienteCobro');
+
+            if (citaGuardada) {
+                const citaPendiente = JSON.parse(citaGuardada);
+
+                idCitaActual = citaPendiente.idCita || null;
+                idClienteActual = citaPendiente.idCliente || null;
+
+                const txtCliente = document.getElementById('txtNombreClientePOS');
+                if (txtCliente) {
+                    txtCliente.value = citaPendiente.nombreCliente || 'Cliente Presencial';
+                }
+
+                const idServicioValido = parseInt(citaPendiente.idServicio) || 1;
+                agregarAlCarrito(
+                    'Servicio', 
+                    idServicioValido, 
+                    citaPendiente.nombreServicio || 'Servicio de Barbería', 
+                    parseFloat(citaPendiente.precioServicio) || 35.00
+                );
+
+                localStorage.removeItem('citaPendienteCobro');
+            }
         });
 
-        async function cargarClientesPOS() {
+        async function cargarProductosPOS() {
+            const contenedor = document.getElementById('contenedorProductosPOS');
+            if (!contenedor) return;
+
             try {
-                const res = await fetch(API_CLIENTES_URL);
-                if (!res.ok) return;
-                const clientes = await res.json();
+                const res = await fetch(API_PRODUCTOS_URL);
+                if (!res.ok) {
+                    contenedor.innerHTML = '<span class="text-danger small">No se pudieron cargar los productos.</span>';
+                    return;
+                }
 
-                const select = document.getElementById('selectClientePOS');
-                select.innerHTML = '<option value="">-- Consumidor Final (Sin Cliente) --</option>';
+                const productos = await res.json();
+                contenedor.innerHTML = '';
 
-                clientes.forEach(c => {
-                    select.innerHTML += `<option value="${c.idCliente}">${c.nombre} (${c.telefono})</option>`;
+                if (productos.length === 0) {
+                    contenedor.innerHTML = '<span class="text-muted small">No hay productos disponibles.</span>';
+                    return;
+                }
+
+                productos.forEach(p => {
+                    const precio = parseFloat(p.precioVenta || p.precio || 35.00);
+                    const stock = p.stock !== undefined ? p.stock : 0;
+                    const estaAgotado = stock <= 0;
+
+                    const btnClass = estaAgotado ? 'btn-outline-secondary opacity-50' : 'btn-outline-success';
+                    const badgeStock = estaAgotado 
+                        ? '<span class="badge bg-danger ms-1">Agotado</span>' 
+                        : `<span class="badge bg-light text-dark border ms-1">${stock} disp.</span>`;
+
+                    const btnHTML = `
+                        <button class="btn ${btnClass} d-flex align-items-center gap-1 mb-2" 
+                                ${estaAgotado ? 'disabled' : ''} 
+                                onclick="agregarAlCarrito('Producto', ${p.idProducto}, '${p.nombreProducto}', ${precio})">
+                            <span>${p.nombreProducto} (Bs. ${precio.toFixed(2)})</span>
+                            ${badgeStock}
+                        </button>
+                    `;
+
+                    contenedor.innerHTML += btnHTML;
                 });
+
             } catch (err) {
-                console.error('Error al cargar clientes en POS:', err);
+                console.error("Error al obtener productos:", err);
+                contenedor.innerHTML = '<span class="text-danger small">Error al conectar con la API de Productos.</span>';
             }
         }
 
         function agregarAlCarrito(tipo, id, nombre, precio) {
-            let existe = carrito.find(i => i.tipoItem === tipo && i.idItem === id);
+            const idNumerico = parseInt(id) || 1;
+            
+            let existe = carrito.find(i => i.tipoItem === tipo && i.idItem === idNumerico);
             if (existe) {
                 existe.cantidad++;
             } else {
-                carrito.push({ tipoItem: tipo, idItem: id, nombreItem: nombre, cantidad: 1, precioUnitario: precio });
+                carrito.push({ 
+                    tipoItem: tipo, 
+                    idItem: idNumerico, 
+                    nombreItem: nombre, 
+                    cantidad: 1, 
+                    precioUnitario: parseFloat(precio) 
+                });
             }
             renderCarrito();
         }
 
         function renderCarrito() {
             let tbody = document.getElementById('tablaCarrito');
+            if (!tbody) return;
+
             tbody.innerHTML = '';
             totalVenta = 0;
-            carrito.forEach(item => {
-                let subtotal = item.cantidad * item.precioUnitario;
-                totalVenta += subtotal;
-                tbody.innerHTML += `<tr><td>${item.nombreItem}</td><td>${item.cantidad}</td><td>Bs. ${item.precioUnitario}</td><td>Bs. ${subtotal}</td></tr>`;
-            });
-            document.getElementById('lblTotal').innerText = totalVenta.toFixed(2);
+
+            if (carrito.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">No hay ítems agregados.</td></tr>';
+            } else {
+                carrito.forEach(item => {
+                    let subtotal = item.cantidad * item.precioUnitario;
+                    totalVenta += subtotal;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${item.nombreItem}</td>
+                            <td class="text-center">${item.cantidad}</td>
+                            <td>Bs. ${item.precioUnitario.toFixed(2)}</td>
+                            <td class="fw-bold">Bs. ${subtotal.toFixed(2)}</td>
+                        </tr>`;
+                });
+            }
+
+            const lblTotal = document.getElementById('lblTotal');
+            if (lblTotal) lblTotal.innerText = totalVenta.toFixed(2);
+            
             calcularCambio();
         }
 
         function toggleEfectivo() {
             let metodo = document.getElementById('metodoPago').value;
-            document.getElementById('boxEfectivo').style.display = (metodo === 'Efectivo') ? 'block' : 'none';
+            const boxEfectivo = document.getElementById('boxEfectivo');
+            if (boxEfectivo) {
+                boxEfectivo.style.display = (metodo === 'Efectivo') ? 'block' : 'none';
+            }
         }
 
         function calcularCambio() {
             let recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
             let cambio = recibido - totalVenta;
-            document.getElementById('lblCambio').innerText = cambio > 0 ? cambio.toFixed(2) : '0.00';
+            const lblCambio = document.getElementById('lblCambio');
+            if (lblCambio) {
+                lblCambio.innerText = cambio > 0 ? cambio.toFixed(2) : '0.00';
+            }
         }
 
         async function procesarCobro() {
-            if (carrito.length === 0) return alert("Agrega ítems a la venta.");
-
-            const clienteIdVal = document.getElementById('selectClientePOS').value;
-
-            let payload = {
-                idBarbero: 1,
-                idCliente: clienteIdVal ? parseInt(clienteIdVal) : null,
-                metodoPago: document.getElementById('metodoPago').value,
-                montoRecibido: parseFloat(document.getElementById('montoRecibido').value) || totalVenta,
-                items: carrito
-            };
-
-            let res = await fetch(`${API_URL}/registrar-cobro`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                let err = await res.text();
-                return alert("Error: " + err);
+            if (carrito.length === 0) {
+                alert('Debes agregar al menos un servicio o producto para cobrar.');
+                return;
             }
 
-            let data = await res.json();
-            alert("¡Cobro exitoso!");
-            generarComprobante(data.idVenta);
-        }
+            const metodoPago = document.getElementById('metodoPago').value;
+            const montoRecibidoInput = parseFloat(document.getElementById('montoRecibido').value) || 0;
 
-        async function generarComprobante(idVenta) {
-            let res = await fetch(`${API_URL}/comprobante/${idVenta}`);
-            let comp = await res.json();
+            // Validación de Efectivo
+            if (metodoPago === 'Efectivo' && montoRecibidoInput < totalVenta) {
+                alert(`El monto recibido (Bs. ${montoRecibidoInput.toFixed(2)}) es menor al total a pagar (Bs. ${totalVenta.toFixed(2)}).`);
+                return;
+            }
 
-            let html = `<strong>${comp.establecimiento}</strong><br>`;
-            html += `Comprobante: ${comp.numeroComprobante}<br>`;
-            html += `Fecha: ${comp.fecha}<br>`;
-            html += `Pago: ${comp.metodoPago}<br><hr>`;
-            comp.items.forEach(i => {
-                html += `${i.cant}x ${i.descripcion} - Bs. ${i.subtotal}<br>`;
-            });
-            html += `<hr><strong>TOTAL: Bs. ${comp.total}</strong><br>`;
-            html += `Recibido: Bs. ${comp.montoRecibido}<br>`;
-            html += `Cambio: Bs. ${comp.cambio}`;
+            const txtCliente = document.getElementById('txtNombreClientePOS');
+            const nombreClienteIngresado = txtCliente && txtCliente.value ? txtCliente.value : 'Consumidor Final';
 
-            document.getElementById('ticketContent').innerHTML = html;
-            document.getElementById('boxComprobante').classList.remove('d-none');
-            carrito = [];
-            renderCarrito();
+            const payloadVenta = {
+                idCliente: idClienteActual ? parseInt(idClienteActual) : null,
+                nombreCliente: nombreClienteIngresado,
+                idBarbero: parseInt(localStorage.getItem('idBarberoSesion')) || 1,
+                idCita: idCitaActual ? parseInt(idCitaActual) : null,
+                metodoPago: metodoPago,
+                montoRecibido: metodoPago === 'Efectivo' ? montoRecibidoInput : totalVenta,
+                items: carrito.map(item => ({
+                    tipoItem: item.tipoItem,
+                    idItem: parseInt(item.idItem),
+                    nombreItem: item.nombreItem || 'Servicio/Producto',
+                    cantidad: parseInt(item.cantidad),
+                    precioUnitario: parseFloat(item.precioUnitario)
+                }))
+            };
+
+            try {
+                const resVenta = await fetch('http://localhost:5224/api/Ventas/registrar-cobro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadVenta)
+                });
+
+                const dataRespuesta = await resVenta.json().catch(() => null);
+
+                if (!resVenta.ok) {
+                    let mensaje = 'Error al registrar el cobro.';
+                    if (typeof dataRespuesta === 'string') {
+                        mensaje = dataRespuesta;
+                    } else if (dataRespuesta?.mensaje || dataRespuesta?.title) {
+                        mensaje = dataRespuesta.mensaje || dataRespuesta.title;
+                    }
+                    throw new Error(mensaje);
+                }
+
+                // Completar la cita en la cola de esperas
+                if (idCitaActual) {
+                    await fetch(`${API_CITAS_URL}/completar/${idCitaActual}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' }
+                    }).catch(err => console.error("Error al actualizar cita:", err));
+                    idCitaActual = null;
+                }
+
+                alert(dataRespuesta.mensaje || '¡Venta registrada exitosamente!');
+                window.location.href = 'barbero-panel.html';
+            } catch (err) {
+                console.error("Error al procesar cobro:", err);
+                alert(`Ocurrió un error:\n${err.message}`);
+            }
         }
     </script>
 </body>

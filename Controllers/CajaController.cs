@@ -90,5 +90,52 @@ namespace SamuBarber.Api.Controllers
 
             return Ok(resumen);
         }
+
+        // GET: api/Caja/arqueo-hoy (Calcula la fórmula completa del arqueo)
+        [HttpGet("arqueo-hoy")]
+        public async Task<IActionResult> ObtenerArqueoHoy()
+        {
+            var inicioDia = DateTime.UtcNow.Date;
+            var finDia = inicioDia.AddDays(1);
+
+            // 1. Obtener Ventas en Efectivo del Día
+            decimal totalVentasEfectivo = await _context.Ventas
+                .Where(v => v.FechaVenta >= inicioDia && v.FechaVenta < finDia && v.MetodoPago == "Efectivo")
+                .SumAsync(v => (decimal?)v.Total) ?? 0m;
+
+            // 2. Obtener Ventas por QR del Día
+            decimal totalVentasQR = await _context.Ventas
+                .Where(v => v.FechaVenta >= inicioDia && v.FechaVenta < finDia && v.MetodoPago == "QR")
+                .SumAsync(v => (decimal?)v.Total) ?? 0m;
+
+            // 3. Obtener Total de Gastos/Egresos del Día
+            decimal totalGastos = await _context.GastosCaja
+                .Where(g => g.FechaRegistro >= inicioDia && g.FechaRegistro < finDia)
+                .SumAsync(g => (decimal?)g.Monto) ?? 0m;
+
+            // 4. Lista de detalle de gastos
+            var listaGastos = await _context.GastosCaja
+                .Where(g => g.FechaRegistro >= inicioDia && g.FechaRegistro < finDia)
+                .OrderByDescending(g => g.FechaRegistro)
+                .ToListAsync();
+
+            // Monto de apertura por defecto (puedes ajustar a tu variable real de apertura)
+            decimal montoInicialCaja = 100.00m; 
+
+            // FÓRMULA FINAL DE ARQUEO:
+            decimal efectivoEsperadoEnCaja = montoInicialCaja + totalVentasEfectivo - totalGastos;
+            decimal totalIngresosBrutos = totalVentasEfectivo + totalVentasQR;
+
+            return Ok(new
+            {
+                montoInicial = montoInicialCaja,
+                ventasEfectivo = totalVentasEfectivo,
+                ventasQR = totalVentasQR,
+                totalIngresos = totalIngresosBrutos,
+                totalGastos = totalGastos,
+                efectivoEsperadoCaja = efectivoEsperadoEnCaja,
+                gastosDetalle = listaGastos
+            });
+        }
     }
 }

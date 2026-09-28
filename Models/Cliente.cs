@@ -11,10 +11,10 @@ namespace SamuBarber.Api.Models
         public int IdCliente { get; set; }
 
         [Column("nombre_completo")]
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = string.Empty;
 
         [Column("telefono")]
-        public string Telefono { get; set; }
+        public string Telefono { get; set; } = "Sin teléfono"; // <-- Asigna este valor por defecto
 
         [Column("email")]
         public string? Email { get; set; }

@@ -4,140 +4,403 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Barbero - SamuBarber</title>
+    <!-- Bootstrap 5 CSS e Íconos -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body { background-color: #f4f6f9; }
         .card-stat { border: none; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .stat-value { font-size: 1.8rem; font-weight: bold; }
+        .badge-prioridad-alta { background-color: #198754; color: white; }
+        .badge-prioridad-normal { background-color: #0d6efd; color: white; }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-scissors me-2"></i>SamuBarber - Mi Mi Panel</a>
-        <div class="d-flex align-items-center text-white">
-            <i class="bi bi-person-badge fs-5 me-2"></i>
-            <span class="fw-bold me-3">Barbero ID: <span id="lblBarberoId">1</span></span>
-            <button class="btn btn-outline-light btn-sm" onclick="cambiarBarbero()"><i class="bi bi-arrow-repeat"></i> Cambiar ID</button>
-        </div>
-    </div>
-</nav>
+    <!-- Contenedor del Navbar inyectado por navbar.js -->
+    <div id="navbarContainer"></div>
 
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-0">Resumen Diario de Comisiones</h3>
-            <small class="text-muted">Mano de obra y servicios prestados en el día de hoy.</small>
+    <div class="container my-4">
+        <!-- Barra de Identificación de Barbero -->
+        <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded-3 shadow-sm mb-4">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-person-badge fs-3 me-3 text-warning"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">Panel de Control del Barbero</h5>
+                    <small class="text-muted">Barbero ID en Sesión: <span id="lblBarberoId" class="badge bg-warning text-dark fw-bold">1</span></small>
+                </div>
+            </div>
+            <button class="btn btn-outline-light btn-sm" onclick="cambiarBarbero()">
+                <i class="bi bi-arrow-repeat me-1"></i> Cambiar Barbero ID
+            </button>
         </div>
-        <button class="btn btn-dark" onclick="cargarComisiones()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
-    </div>
 
-    <!-- TAREA 2 & 3: Tarjetas con totales de comisiones del Barbero (Oculta ventas globales del local) -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card card-stat p-3 bg-white text-dark">
-                <span class="text-muted fw-bold">Cortes / Servicios Hoy</span>
-                <div class="stat-value text-primary mt-1" id="totalCortes">0</div>
+        <!-- SECCIÓN 1: RECEPCIÓN Y COLA DE ESPERA EN TIEMPO REAL -->
+        <div class="row g-4 mb-5">
+            <!-- Registrar Cliente Presencial -->
+            <div class="col-lg-5">
+                <div class="card card-stat p-4 bg-white h-100">
+                    <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-person-plus-fill me-2"></i>Registrar Cliente Sin Cita</h5>
+                    <form id="formSinCita">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre del Cliente</label>
+                            <input type="text" id="nombreCliente" class="form-control" placeholder="Ej. Juan Pérez" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Servicio a Realizar</label>
+                            <select id="idServicio" class="form-select" onchange="actualizarDuracion()">
+                                <option value="1" data-duracion="30">Corte Clásico / Fade (30 min)</option>
+                                <option value="2" data-duracion="45">Corte + Perfilado de Barba (45 min)</option>
+                                <option value="3" data-duracion="20">Solo Barba / Delineado (20 min)</option>
+                                <option value="4" data-duracion="60">Servicio Completo VIP (60 min)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Duración Estimada (Minutos)</label>
+                            <input type="number" id="duracion" class="form-control" value="30" readonly>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">
+                            <i class="bi bi-plus-circle me-1"></i> Agregar a Cola de Espera
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabla de Cola de Espera del Día -->
+            <div class="col-lg-7">
+                <div class="card card-stat p-4 bg-white h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-list-task me-2 text-warning"></i>Cola de Espera del Día</h5>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="cargarColaEspera()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo</th>
+                                    <th>Prioridad</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaCola">
+                                <tr><td colspan="6" class="text-center text-muted py-3">Cargando cola de espera...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-stat p-3 bg-white text-dark">
-                <span class="text-muted fw-bold">Generado en Mano de Obra</span>
-                <div class="stat-value text-secondary mt-1">Bs. <span id="totalManoObra">0.00</span></div>
+
+        <hr class="my-5">
+
+        <!-- SECCIÓN 2: RESUMEN Y DETALLE DE COMISIONES DEL DÍA -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-0">Resumen Diario de Comisiones</h3>
+                <small class="text-muted">Mano de obra y servicios prestados en el día de hoy.</small>
+            </div>
+            <button class="btn btn-dark" onclick="cargarComisiones()"><i class="bi bi-arrow-clockwise me-1"></i> Actualizar Comisiones</button>
+        </div>
+
+        <!-- Indicadores / Totales -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card card-stat p-3 bg-white text-dark">
+                    <span class="text-muted fw-bold">Cortes / Servicios Hoy</span>
+                    <div class="stat-value text-primary mt-1" id="totalCortes">0</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-stat p-3 bg-white text-dark">
+                    <span class="text-muted fw-bold">Generado en Mano de Obra</span>
+                    <div class="stat-value text-secondary mt-1">Bs. <span id="totalManoObra">0.00</span></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-stat p-3 bg-success text-white">
+                    <span class="fw-bold">Mi Comisión (50% Exacto)</span>
+                    <div class="stat-value mt-1">Bs. <span id="totalComision">0.00</span></div>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-stat p-3 bg-success text-white">
-                <span class="fw-bold">Mi Comisión (50% Exacto)</span>
-                <div class="stat-value mt-1">Bs. <span id="totalComision">0.00</span></div>
+
+        <!-- Detalle de Servicios Atendidos -->
+        <div class="card card-stat p-4 mb-5 bg-white">
+            <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2"></i>Detalle de Servicios Atendidos Hoy</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Hora</th>
+                            <th># Venta</th>
+                            <th>Servicio / Corte</th>
+                            <th>Cant.</th>
+                            <th>Mano de Obra</th>
+                            <th>Comisión Barbero (50%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCortes">
+                        <tr><td colspan="6" class="text-center text-muted">Cargando información...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- TAREA 2: Listado de servicios del día -->
-    <div class="card card-stat p-4 mb-5">
-        <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2"></i>Detalle de Servicios Atendidos Hoy</h5>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Hora</th>
-                        <th># Venta</th>
-                        <th>Servicio / Corte</th>
-                        <th>Cant.</th>
-                        <th>Mano de Obra</th>
-                        <th>Comisión Barbero (50%)</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaCortes">
-                    <tr><td colspan="6" class="text-center text-muted">Cargando información...</td></tr>
-                </tbody>
-            </table>
+    <!-- MODAL PARA CANCELAR CITA -->
+    <div class="modal fade" id="modalCancelar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i>Cancelar Cita #<span id="modalIdCitaTexto"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formCancelarModal">
+                        <input type="hidden" id="modalIdCita">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Motivo de Cancelación</label>
+                            <textarea id="modalMotivo" class="form-control" rows="3" placeholder="Ej. El cliente llamó para cancelar / No se presentó" required></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    const API_URL = 'http://localhost:5224/api/Barberos';
-    let idBarberoActual = localStorage.getItem('idBarberoSesion') || 1;
+    <!-- Scripts de Bootstrap y Navbar -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="navbar.js"></script>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('lblBarberoId').innerText = idBarberoActual;
-        cargarComisiones();
-    });
+    <script>
+        const API_BARBEROS_URL = 'http://localhost:5224/api/Barberos';
+        const API_CITAS_URL = 'http://localhost:5224/api/Citas';
 
-    async function cargarComisiones() {
-        try {
-            const res = await fetch(`${API_URL}/${idBarberoActual}/comisiones-dia`);
-            if (!res.ok) throw new Error('Error al cargar comisiones.');
+        // Mapa de fallback por si la API de Citas no devuelve el nombre/precio directo del servicio
+        const CAT_SERVICIOS = {
+            1: { nombre: 'Corte Clásico / Fade', precio: 35.00 },
+            2: { nombre: 'Corte + Perfilado de Barba', precio: 50.00 },
+            3: { nombre: 'Solo Barba / Delineado', precio: 25.00 },
+            4: { nombre: 'Servicio Completo VIP', precio: 80.00 }
+        };
 
-            const data = await res.json();
+        let idBarberoActual = localStorage.getItem('idBarberoSesion') || 1;
+        let modalCancelarBootstrap;
 
-            // Renderizar indicadores
-            document.getElementById('totalCortes').innerText = data.totalCortesAtendidos;
-            document.getElementById('totalManoObra').innerText = data.totalManoObraGenerada.toFixed(2);
-            document.getElementById('totalComision').innerText = data.totalComisionGanada.toFixed(2);
-
-            // Renderizar tabla
-            const tabla = document.getElementById('tablaCortes');
-            tabla.innerHTML = '';
-
-            if (data.cortesRealizados.length === 0) {
-                tabla.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No registras cortes atenciones registradas hoy.</td></tr>';
-                return;
-            }
-
-            data.cortesRealizados.forEach(c => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${c.fecha}</td>
-                    <td><strong>#${c.idVenta}</strong></td>
-                    <td>${c.nombreServicio}</td>
-                    <td>${c.cantidad}</td>
-                    <td>Bs. ${c.subtotalServicio.toFixed(2)}</td>
-                    <td class="fw-bold text-success">Bs. ${(c.subtotalServicio * 0.50).toFixed(2)}</td>
-                `;
-                tabla.appendChild(row);
-            });
-
-        } catch (err) {
-            console.error(err);
-            document.getElementById('tablaCortes').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al conectar con la API. Revisa que el backend esté corriendo.</td></tr>';
-        }
-    }
-
-    function cambiarBarbero() {
-        const nuevoId = prompt('Ingresa el ID del Barbero en sesión:', idBarberoActual);
-        if (nuevoId && !isNaN(nuevoId)) {
-            idBarberoActual = nuevoId;
-            localStorage.setItem('idBarberoSesion', idBarberoActual);
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNavbar('comisiones');
             document.getElementById('lblBarberoId').innerText = idBarberoActual;
-            cargarComisiones();
-        }
-    }
-</script>
 
+            modalCancelarBootstrap = new bootstrap.Modal(document.getElementById('modalCancelar'));
+
+            cargarComisiones();
+            cargarColaEspera();
+        });
+
+        // 1. CARGAR RESUMEN Y DETALLE DE COMISIONES (GET)
+        async function cargarComisiones() {
+            try {
+                const res = await fetch(`${API_BARBEROS_URL}/${idBarberoActual}/comisiones-dia`);
+                if (!res.ok) throw new Error('Error al cargar comisiones.');
+
+                const data = await res.json();
+
+                document.getElementById('totalCortes').innerText = data.totalCortesAtendidos || 0;
+                document.getElementById('totalManoObra').innerText = (data.totalManoObraGenerada || 0).toFixed(2);
+                document.getElementById('totalComision').innerText = (data.totalComisionGanada || 0).toFixed(2);
+
+                const tabla = document.getElementById('tablaCortes');
+                tabla.innerHTML = '';
+
+                if (!data.cortesRealizados || data.cortesRealizados.length === 0) {
+                    tabla.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No registras atenciones registradas hoy.</td></tr>';
+                    return;
+                }
+
+                data.cortesRealizados.forEach(c => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${c.fecha}</td>
+                        <td><strong>#${c.idVenta}</strong></td>
+                        <td>${c.nombreServicio}</td>
+                        <td>${c.cantidad}</td>
+                        <td>Bs. ${c.subtotalServicio.toFixed(2)}</td>
+                        <td class="fw-bold text-success">Bs. ${(c.subtotalServicio * 0.50).toFixed(2)}</td>
+                    `;
+                    tabla.appendChild(row);
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('tablaCortes').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al conectar con la API de Barberos.</td></tr>';
+            }
+        }
+
+        // 2. CARGAR COLA DE ESPERA DE CITAS (GET)
+        async function cargarColaEspera() {
+            const tabla = document.getElementById('tablaCola');
+            try {
+                const res = await fetch(`${API_CITAS_URL}/cola-espera/${idBarberoActual}`);
+                
+                if (!res.ok) {
+                    console.error(`Error HTTP ${res.status} al cargar la cola`);
+                    return;
+                }
+
+                const data = await res.json();
+                const lista = Array.isArray(data) ? data : (data.datos || data.resultado || []);
+
+                if (lista.length === 0) {
+                    tabla.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No hay citas en espera para hoy.</td></tr>';
+                    return;
+                }
+
+                tabla.innerHTML = '';
+                lista.forEach(item => {
+                    const badgeClass = item.prioridad === 1 ? 'badge-prioridad-alta' : 'badge-prioridad-normal';
+                    const nombreCli = item.nombreCliente || ('Cliente #' + item.idCliente);
+                    
+                    // Mapeo dinámico del servicio según el ID o nombre devuelto por el Backend
+                    const idServ = parseInt(item.idServicio || item.id_servicio) || 1;
+                    const infoServ = CAT_SERVICIOS[idServ] || CAT_SERVICIOS[1];
+                    
+                    const nombreServ = item.nombreServicio || item.servicio || infoServ.nombre;
+                    const precioServ = parseFloat(item.precioServicio || item.precio || infoServ.precio);
+
+                    tabla.innerHTML += `
+                        <tr>
+                            <td><strong>${item.hora}</strong></td>
+                            <td>${nombreCli}</td>
+                            <td><small class="text-muted">${item.tipo || 'Sin Cita'}</small></td>
+                            <td><span class="badge ${badgeClass}">${item.prioridad === 1 ? 'Reserva' : 'Sin Cita'}</span></td>
+                            <td><span class="badge bg-warning text-dark">${item.estado}</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-success me-1" 
+                                        onclick="completarYCobrarCita(${item.id || item.idCita}, ${item.idCliente || 'null'}, '${nombreCli}', ${idServ}, '${nombreServ}', ${precioServ})">
+                                    <i class="bi bi-cash-stack"></i> Cobrar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="abrirModalCancelar(${item.id || item.idCita})" title="Cancelar cita">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error("Error al refrescar la cola:", err);
+            }
+        }
+
+        // 3. REGISTRAR CLIENTE PRESENCIAL SIN CITA (POST)
+        document.getElementById('formSinCita').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const bodyData = {
+                nombreCliente: document.getElementById('nombreCliente').value.trim(),
+                telefono: "Sin teléfono", // Evitamos 'null' en la BD
+                idBarbero: parseInt(idBarberoActual),
+                idServicio: parseInt(document.getElementById('idServicio').value),
+                duracionMinutos: parseInt(document.getElementById('duracion').value)
+            };
+
+            try {
+                const res = await fetch(`${API_CITAS_URL}/registrar-sin-cita`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert(`Error: ${data.detalle || data.mensaje || 'Error al guardar en BD'}`);
+                    return;
+                }
+
+                alert(data.mensaje || 'Cliente agregado a la cola con éxito.');
+                document.getElementById('nombreCliente').value = '';
+                cargarColaEspera();
+            } catch (err) {
+                console.error("Error al procesar la petición:", err);
+                alert('Ocurrió un error en la solicitud. Revisa si la API está corriendo.');
+            }
+        });
+
+        // 4. CANCELAR CITA MEDIANTE MODAL (POST)
+        function abrirModalCancelar(idCita) {
+            document.getElementById('modalIdCita').value = idCita;
+            document.getElementById('modalIdCitaTexto').innerText = idCita;
+            document.getElementById('modalMotivo').value = '';
+            modalCancelarBootstrap.show();
+        }
+
+        document.getElementById('formCancelarModal').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usuarioActual = localStorage.getItem('usuario_nombre') || 'Barbero';
+
+            const bodyData = {
+                idCita: parseInt(document.getElementById('modalIdCita').value),
+                usuarioResponsable: usuarioActual,
+                motivo: document.getElementById('modalMotivo').value
+            };
+
+            try {
+                const res = await fetch(`${API_CITAS_URL}/cancelar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+
+                const data = await res.json();
+                alert(data.mensaje || 'Cita cancelada.');
+                modalCancelarBootstrap.hide();
+                cargarColaEspera();
+            } catch (err) {
+                alert('Error al cancelar la cita.');
+            }
+        });
+
+        // 5. COMPLETAR CITA Y PASAR A POS DE FORMA COMPLETA
+        function completarYCobrarCita(idCita, idCliente, nombreCliente, idServicio, nombreServicio, precioServicio) {
+            const citaPendiente = {
+                idCita: idCita,
+                idCliente: idCliente,
+                nombreCliente: nombreCliente,
+                idServicio: idServicio,
+                nombreServicio: nombreServicio,
+                precioServicio: parseFloat(precioServicio) || 35.00
+            };
+            
+            localStorage.setItem('citaPendienteCobro', JSON.stringify(citaPendiente));
+            window.location.href = 'pos.html';
+        }
+
+        // Auxiliares
+        function actualizarDuracion() {
+            const select = document.getElementById('idServicio');
+            const duracion = select.options[select.selectedIndex].getAttribute('data-duracion');
+            document.getElementById('duracion').value = duracion;
+        }
+
+        function cambiarBarbero() {
+            const nuevoId = prompt('Ingresa el ID del Barbero en sesión:', idBarberoActual);
+            if (nuevoId && !isNaN(nuevoId)) {
+                idBarberoActual = nuevoId;
+                localStorage.setItem('idBarberoSesion', idBarberoActual);
+                document.getElementById('lblBarberoId').innerText = idBarberoActual;
+                cargarComisiones();
+                cargarColaEspera();
+            }
+        }
+    </script>
 </body>
 </html>

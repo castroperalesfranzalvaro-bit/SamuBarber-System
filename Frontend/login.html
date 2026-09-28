@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SamuBarber - Iniciar Sesión</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e2e;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background-color: #2b2b3d;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            width: 320px;
+        }
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #f5a97f;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #45475a;
+            background-color: #181825;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 10px;
+            background-color: #f5a97f;
+            border: none;
+            border-radius: 4px;
+            color: #11111b;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-submit:hover {
+            background-color: #ee996f;
+        }
+        .error-message {
+            color: #f38ba8;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>SamuBarber</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Correo / Usuario</label>
+                <input type="email" id="email" required placeholder="admin@samubarber.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-submit">Ingresar</button>
+            <div id="errorMsg" class="error-message"></div>
+        </form>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:5224/api/auth/login"; // Ajusta el puerto si tu API usa otro (ej. 5000 o 7000)
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Credenciales incorrectas');
+                }
+
+                const data = await response.json();
+
+                // Guardar Token y Rol en la sesión (localStorage)
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('usuario_rol', data.rol); // <- Esta es la clave correcta
+                localStorage.setItem('usuario_nombre', data.nombre || email);
+
+                // Redireccionar según el Rol recibido
+                if (data.rol === 'Barbero') {
+                    window.location.href = 'barbero-panel.html';
+                } else {
+                    window.location.href = 'reportes-mensuales.html';
+                }
+
+            } catch (err) {
+                errorMsg.innerText = err.message || 'Error al iniciar sesión';
+                errorMsg.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
