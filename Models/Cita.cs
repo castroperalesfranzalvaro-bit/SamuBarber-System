@@ -27,10 +27,10 @@ namespace SamuBarber.Api.Models
         public string Estado { get; set; } = "Agendada";
 
         [Column("duracion_total_min")]
-        public int DuracionTotalMin { get; set; } = 40; // <-- AÑADIDO
+        public int DuracionTotalMin { get; set; } = 40; 
 
         [Column("es_sin_cita")]
-        public bool EsSinCita { get; set; } = false; // <-- AÑADIDO
+        public bool EsSinCita { get; set; } = false; 
 
         [Column("fecha_modificacion")]
         public DateTime? FechaModificacion { get; set; }

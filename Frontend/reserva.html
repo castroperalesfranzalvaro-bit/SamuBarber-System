@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samu Barber - Reservas y Catálogo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .hero-section {
+            background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.75)), url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+        .card-corte img {
+            height: 220px;
+            object-fit: cover;
+            border-top-left-radius: .375rem;
+            border-top-right-radius: .375rem;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado Principal / Hero -->
+    <div class="hero-section mb-5 shadow">
+        <h1 class="display-3 fw-bold">💈 Samu Barber</h1>
+        <p class="lead text-light">Estilo, precisión y la mejor atención. Reserva tu cita en línea en segundos.</p>
+        <a href="#seccionReserva" class="btn btn-warning btn-lg fw-bold mt-3 shadow">
+            <i class="bi bi-calendar-check me-2"></i>Reservar mi Cita
+        </a>
+    </div>
+
+    <div class="container pb-5">
+        
+        <!-- SECCIÓN 1: FORMULARIO DE RESERVA DE CITA -->
+        <div id="seccionReserva" class="row justify-content-center mb-5">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-lg border-0 rounded-3">
+                    <div class="card-header bg-dark text-white text-center py-3">
+                        <h4 class="fw-bold mb-0"><i class="bi bi-scissors me-2 text-warning"></i>Agendar tu Cita</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="formReservaCliente">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Tu Nombre Completo *</label>
+                                <input type="text" id="txtNombre" class="form-control form-control-lg" placeholder="Ej. Alex Alarcón" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Teléfono / WhatsApp *</label>
+                                <input type="tel" id="txtTelefono" class="form-control" placeholder="Ej. 75012345" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Selecciona el Servicio *</label>
+                                <select id="selectServicio" class="form-select" required>
+                                    <option value="1">Corte de Cabello VIP - Bs. 35.00</option>
+                                    <option value="2">Perfilado de Barba - Bs. 25.00</option>
+                                    <option value="3">Combo Completo (Corte + Barba) - Bs. 50.00</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Selecciona tu Barbero *</label>
+                                <select id="selectBarbero" class="form-select" required>
+                                    <option value="1">Samu (Barbero Principal)</option>
+                                    <option value="2">Barbero 2</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Fecha y Hora deseada *</label>
+                                <input type="datetime-local" id="txtFechaHora" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow">
+                                <i class="bi bi-check-circle me-1"></i> Confirmar Reserva
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-5">
+
+        <!-- SECCIÓN 2: GALERÍA DE CORTES Y ESTILOS -->
+        <h3 class="fw-bold text-center mb-2"><i class="bi bi-camera me-2 text-primary"></i>Catálogo de Estilos</h3>
+        <p class="text-center text-muted mb-4">Inspiración para tu próximo cambio de look</p>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card card-corte card-hover shadow-sm border-0">
+                    <img src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=500&q=80" alt="Fade Clasico">
+                    <div class="card-body text-center">
+                        <h5 class="fw-bold">Fade / Degradado</h5>
+                        <p class="text-muted small">Corte moderno con degradado limpio a los costados y volumen superior.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-corte card-hover shadow-sm border-0">
+                    <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=500&q=80" alt="Corte y Barba">
+                    <div class="card-body text-center">
+                        <h5 class="fw-bold">Barba Esculpida</h5>
+                        <p class="text-muted small">Perfilado con toalla caliente, hidratación y acabado a navaja.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-corte card-hover shadow-sm border-0">
+                    <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=500&q=80" alt="Texturizado">
+                    <div class="card-body text-center">
+                        <h5 class="fw-bold">Peinado Texturizado</h5>
+                        <p class="text-muted small">Estilizado profesional con Polvo Texturizador de efecto mate.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-5">
+
+        <!-- SECCIÓN 3: CATÁLOGO DE PRODUCTOS DISPONIBLES EN TIENDA -->
+        <h3 class="fw-bold text-center mb-2"><i class="bi bi-shop me-2 text-success"></i>Productos en Venta</h3>
+        <p class="text-center text-muted mb-4">Productos disponibles para llevar directamente en el local</p>
+
+        <div id="contenedorProductosCliente" class="row g-4 justify-content-center">
+            <div class="text-center text-muted">Cargando catálogo de productos...</div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPT CONEXIÓN A API -->
+    <script>
+        const API_CITAS_URL = 'http://localhost:5224/api/Citas';
+        const API_PRODUCTOS_URL = 'http://localhost:5224/api/Productos';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('txtFechaHora').value = now.toISOString().slice(0, 16);
+
+            cargarProductosCliente();
+        });
+
+        async function cargarProductosCliente() {
+            const contenedor = document.getElementById('contenedorProductosCliente');
+            try {
+                const res = await fetch(API_PRODUCTOS_URL);
+                if (!res.ok) throw new Error();
+
+                const productos = await res.json();
+                contenedor.innerHTML = '';
+
+                if (productos.length === 0) {
+                    contenedor.innerHTML = '<div class="text-muted text-center">No hay productos cargados en inventario.</div>';
+                    return;
+                }
+
+                productos.forEach(p => {
+                    const precio = p.precioVenta || p.precio || 35.00;
+                    const stock = p.stock !== undefined ? p.stock : 0;
+                    const estaAgotado = stock <= 0;
+
+                    const html = `
+                        <div class="col-md-4">
+                            <div class="card card-hover shadow-sm h-100 border-0">
+                                <div class="card-body text-center d-flex flex-column justify-content-between">
+                                    <div>
+                                        <i class="bi bi-box-seam display-4 text-warning mb-2"></i>
+                                        <h5 class="fw-bold mb-1">${p.nombreProducto}</h5>
+                                        <p class="text-muted small">Cuidado y estilizado profesional.</p>
+                                    </div>
+                                    <div class="mt-3">
+                                        <h4 class="text-success fw-bold">Bs. ${parseFloat(precio).toFixed(2)}</h4>
+                                        <span class="badge ${estaAgotado ? 'bg-danger' : 'bg-secondary'} p-2">
+                                            ${estaAgotado ? 'Agotado' : 'Disponible: ' + stock + ' unids.'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    contenedor.innerHTML += html;
+                });
+            } catch (err) {
+                contenedor.innerHTML = '<div class="text-danger text-center">Error al conectar con el servidor de productos.</div>';
+            }
+        }
+
+        document.getElementById('formReservaCliente').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        nombreCliente: document.getElementById('txtNombre').value.trim(),
+        telefonoCliente: document.getElementById('txtTelefono').value.trim(),
+        idServicio: parseInt(document.getElementById('selectServicio').value),
+        idBarbero: parseInt(document.getElementById('selectBarbero').value),
+        fechaHora: new Date(document.getElementById('txtFechaHora').value).toISOString()
+    };
+
+    try {
+        const res = await fetch(`${API_CITAS_URL}/reserva-publica`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            alert(data.mensaje || data.detalle || 'Error al agendar la reserva.');
+            return;
+        }
+
+        alert(`¡Reserva confirmada con éxito, ${payload.nombreCliente}!\nTe esperamos en Samu Barber.`);
+        document.getElementById('formReservaCliente').reset();
+
+    } catch (err) {
+        console.error(err);
+        alert('Ocurrió un error al procesar la reserva. Revisa la consola.');
+    }
+});
+    </script>
+</body>
+</html>

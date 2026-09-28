@@ -207,6 +207,81 @@ public async Task<IActionResult> CompletarCita(int id)
 
     return Ok(new { mensaje = "Cita completada exitosamente." });
 }
+
+// POST: api/Citas/reserva-publica
+// POST: api/Citas/reserva-publica
+// POST: api/Citas/reserva-publica
+[HttpPost("reserva-publica")]
+public async Task<IActionResult> RegistrarReservaPublica([FromBody] CrearReservaDto dto)
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(dto.NombreCliente))
+            return BadRequest(new { mensaje = "El nombre del cliente es obligatorio." });
+
+        // 1. Buscar o crear cliente
+        var cliente = await _context.Clientes
+            .FirstOrDefaultAsync(c => c.Nombre.ToLower() == dto.NombreCliente.Trim().ToLower());
+
+        if (cliente == null)
+        {
+            cliente = new Cliente
+            {
+                Nombre = dto.NombreCliente.Trim(),
+                Telefono = dto.TelefonoCliente ?? "",
+                TotalAtenciones = 0
+            };
+            _context.Clientes.Add(cliente);
+            await _context.SaveChangesAsync();
+        }
+
+        // 2. Convertir la fecha ingresada a UTC para PostgreSQL
+        DateTime fechaUtc = dto.FechaHora != default 
+            ? DateTime.SpecifyKind(dto.FechaHora, DateTimeKind.Utc) 
+            : DateTime.UtcNow;
+
+        // 3. Validar existencia de Barbero y Servicio (usar ID 1 de respaldo si no existe)
+        int idBarberoValido = dto.IdBarbero > 0 ? dto.IdBarbero : 1;
+        int idServicioValido = dto.IdServicio > 0 ? dto.IdServicio : 1;
+
+        var nuevaCita = new Cita
+        {
+            IdCliente = cliente.IdCliente,
+            IdBarbero = idBarberoValido,
+            IdServicio = idServicioValido,
+            FechaHora = fechaUtc,
+            Estado = "Agendada",
+            DuracionTotalMin = 40,
+            EsSinCita = false
+        };
+
+        _context.Citas.Add(nuevaCita);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            mensaje = "¡Tu cita ha sido reservada con éxito!",
+            idCita = nuevaCita.Id,
+            cliente = cliente.Nombre
+        });
+    }
+    catch (Exception ex)
+    {
+        // Retornar el detalle exacto del error para depuración
+        return StatusCode(500, new { mensaje = "Error interno en el servidor", detalle = ex.InnerException?.Message ?? ex.Message });
+    }
+}
+
+// DTO para la reserva
+public class CrearReservaDto
+{
+    public string NombreCliente { get; set; } = string.Empty;
+    public string? TelefonoCliente { get; set; }
+    public int IdBarbero { get; set; }
+    public int IdServicio { get; set; }
+    public DateTime FechaHora { get; set; }
+    public string? Notas { get; set; }
+}
 public class RegistrarSinCitaDto
 {
     public string NombreCliente { get; set; } = string.Empty;
